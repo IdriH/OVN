@@ -25,7 +25,6 @@ class SignalInformation:
     def get_noise_power(self):
         return self._noise_power
 
-
     def set_noise_power(self,noise_power):
         self._noise_power = noise_power
 

@@ -38,12 +38,12 @@ class Node:
     def set_successive(self,successive):
         self._successive = successive
 
-    def propagate(self,signal_information):
+    def propagate(self,signal_information,occupation = False):
         path = signal_information.get_path
         if len(path)>1:
             line_label = path[0] + path[1] # node to node
             line = self._successive[line_label]
             signal_information.next()
-            signal_information = line.propagate(signal_information)
+            signal_information = line.propagate(signal_information,occupation)
         return signal_information
 

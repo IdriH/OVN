@@ -7,6 +7,7 @@ import pandas as pd
 network = Network('../Resources/nodes.json')
 paths = network.find_paths('A','F',[])
 # print(type(paths))
+print(paths)
 
 network.connect()
 
