@@ -9,6 +9,7 @@ class Line:
     def __init__(self,line_dict):
         self.label = line_dict['label']
         self.length = line_dict['length']
+        self._state = ['free']*10
         self.successive = {}
 
 
@@ -22,13 +23,14 @@ class Line:
     @property
     def state(self):
         return self._state
-
+    @state.setter
     def state(self,state):
-        state = state.lower().strip()
-        if state in ['free','occupied']:
+        state = [s.lower().strip() for s in state]
+        if set(state).issubset(set(['free','occupied'])):
             self._state = state
         else:
-            print('Error:Line state not recognized,Value:',state)
+            print('Error:Line state not recognized,Value:',
+                  set(state)-set(['free','occupied']))
 
 
     def latency_generation(self):
@@ -39,22 +41,25 @@ class Line:
         return self.noise_power
 
 
-    def propagate (self,signal_information,occupation = 'False'):
+    def propagate (self,lightpath,occupation = 'False'):
         # UPDATE LATENCY
         latency = self.latency_generation()
-        signal_information.add_latency(self.latency)
+        lightpath.add_latency(self.latency)
 
         #Update noise
-        signal_power = signal_information.get_signal_power
+        signal_power = lightpath.signal_power
         noise = self.noise_generation(signal_power)
-        signal_information.add_noise(noise)
+        lightpath.add_noise(noise)
 
 
         #Update line state
         if occupation:
-            self.state = 'occupied'
+            channel = lightpath.channel
+            new_state = self.state[:]
+            new_state[channel] = 'occupied'
+            self.state = new_state
 
-        node = self.successive[signal_information._path[0]]
-        signal_information = node.propagate(signal_information,occupation)
+        node = self.successive[lightpath._path[0]]
+        lightpath = node.propagate(lightpath,occupation)
 
-        return signal_information
+        return lightpath

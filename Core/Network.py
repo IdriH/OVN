@@ -1,5 +1,7 @@
 import json
 import numpy as np
+
+from Core.Lightpath import Lightpath
 from Line import Line
 from Node import Node
 import matplotlib.pyplot as plt
@@ -14,6 +16,7 @@ class Network:
         self._lines = {}
         self._connected = False
         self._weighted_paths = None
+        self._route_space = None
 
         node_json = json.load(open(nodes_file,'r'))
 
@@ -33,7 +36,25 @@ class Network:
                 line = Line(line_dict)
                 self._lines[line_label] = line
 
+    @property
+    def nodes(self):
+        return self._nodes
 
+    @property
+    def lines(self):
+        return self._lines
+
+    @property
+    def connected(self):
+        return self._connected
+
+    @property
+    def weighted_paths(self):
+        return self._weighted_paths
+
+    @property
+    def route_space(self):
+        return self._route_space
 
     def connect(self):
         nodes_dict = self._nodes
@@ -72,19 +93,22 @@ class Network:
         return paths
 
 
-    def propagate(self,signal_information):
+    def propagate(self,lightpath,occupation = False):
 
 
-        path = signal_information._path
+        path = lightpath.path
+
         # for i in range(1,len(path)):
         #     node_1 = self._nodes[path[i]]
         #
         #     line_1 = self._nodes[path[i-1]].get_node_label + self._nodes[path[i]].get_node_label
         #
         #print(self._nodes[path[0]].get_node_label)
-        sig_info = self._nodes[path[0]].propagate(signal_information)
 
-        return sig_info
+        start_node = self.nodes[path[0]]
+        propagated_lightpath = start_node.propagate(lightpath,occupation)
+
+        return propagated_lightpath
 
     def draw(self):
         nodes = self._nodes
@@ -130,7 +154,7 @@ class Network:
                 paths.append(path_string)
                 # Propagation
                 signal_information = SignalInformation(signal_power, path)
-                signal_information = self.propagate(signal_information)
+                signal_information = self.propagate(signal_information,occupation = False)
                 latencies.append(signal_information._latency)
                 noises.append(signal_information._noise_power)
                 snrs.append(
@@ -145,29 +169,35 @@ class Network:
         df['snr' ] = snrs
         self._weighted_paths = df
 
-    def  find_best_snr(self,node_a,node_b):
+        route_space = pd.DataFrame()
+        route_space['path'] = paths
+        for i in range(10):
+            route_space[str(i)] = ['free']*len(paths)
+        self._route_space =route_space
 
+    def  find_best_snr(self,node_a,node_b):
+        available_paths = self.available_paths(node_a,node_b)
         if self._connected == True:
             ws = self.weighted_paths.sort_values(by = 'snr',ascending=False)
 
 
-        for path in ws['path']:
-            if path in self.available_paths(node_a,node_b):
+        for path in available_paths:
                 if path[0] == node_a and path[-1] == node_b:
                     return path
 
 
-        return "No path"
+        return None
 
     def find_best_latency(self,node_a,node_b):
+        available_paths = self.available_paths(node_a,node_b)
         if self._connected == True:
             ws = self.weighted_paths.sort_values(by = 'latency')
 
-        for path in ws['path']:
-            if path in self.available_paths(node_a, node_b):
+        for path in available_paths:
+
                 if path[0] == node_a and path[-1] == node_b:
                     return path
-        return "No path"
+        return None
 
     def stream(self,connections,best = 'latency'):
         streamed_connections = []
@@ -175,7 +205,7 @@ class Network:
             input_node = connection._input_node
             output_node = connection._output_node
             signal_power = connection.signal_power
-            self.set_weighted_paths(signal_power)
+
             if best == 'latency':
                 path = self.find_best_latency(input_node,output_node)
             elif best == 'snr':
@@ -184,11 +214,18 @@ class Network:
                 print('Error:best connection not recognized')
                 continue
             if path:
-                in_sig_info = SignalInformation(signal_power,path)
-                out_sig_info = self.propagate(in_sig_info)
-                connection.latency = out_sig_info.get_latency
-                noise = out_sig_info.get_noise_power
-                connection.snr = 10*np.log10(signal_power/noise)
+                path_occupancy = self.route_space.loc[
+                                     self.route_space.path == path].T.values[1:]
+
+                channel = [i for i in range(len(path_occupancy))
+                 if path_occupancy[i] == 'free'][0]
+
+                in_lightpath = Lightpath(signal_power, path, channel)
+                out_lightpath = self.propagate(in_lightpath, True)
+                connection.latency = out_lightpath.latency
+                noise_power = out_lightpath.noise_power
+                connection.snr = 10 * np.log10(signal_power / noise_power)
+                self.update_route_space(path, channel)
             else:
                 connection.latency = None
                 connection.snr = 0
@@ -200,15 +237,24 @@ class Network:
             self.set_weighted_paths(1)
         all_paths = [path for path in self._weighted_paths.path.values
                      if((path[0] == input_node)and (path[-1] == output_node))]
-        unavailable_lines = [line for line in self._lines
-                             if self._lines[line].state == 'occupied']
         available_paths = []
         for path in all_paths:
-            available = True
-            for line in unavailable_lines:
-                if line[0] + line[1] in path :
-                    available = False
-                    break
-            if available:
+            path_occupancy = self.route_space.loc[
+                self.route_space.path == path].T.values[1:]
+            if 'free' in path_occupancy:
                 available_paths.append(path)
-        return available_paths
+        return  available_paths
+    @staticmethod
+    def path_to_line_set(path):
+        print(path)
+        return set([path[i] + path[i+1] for i in range(len(path)-1)])
+
+    def update_route_space(self,path,channel):
+        all_paths = [self.path_to_line_set(p) for p in self.route_space.path.values]
+        states = self.route_space[str(channel)]
+        lines = self.path_to_line_set(path)
+        for i in range(len(all_paths)):
+            line_set = all_paths[i]
+            if lines.intersection(line_set):
+                states[i] = 'occupied'
+        self.route_space[str(channel)] = states

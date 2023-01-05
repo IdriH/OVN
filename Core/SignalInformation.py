@@ -1,9 +1,7 @@
 
 class SignalInformation:
 
-    _signal_power = 0
-    _noise_power = 0
-    _latency = 0
+
 
     def __init__(self,signal_power,path):
         self._signal_power = signal_power
@@ -14,7 +12,7 @@ class SignalInformation:
 
 
     @property
-    def get_signal_power(self):
+    def signal_power(self):
         return self._signal_power
 
 
@@ -22,14 +20,14 @@ class SignalInformation:
         self._signal_power = signal_power
 
     @property
-    def get_noise_power(self):
+    def noise_power(self):
         return self._noise_power
 
     def set_noise_power(self,noise_power):
         self._noise_power = noise_power
 
     @property
-    def get_latency(self):
+    def latency(self):
         return self._latency
 
 
@@ -37,7 +35,7 @@ class SignalInformation:
         self._latency = latency
 
     @property
-    def get_path(self):
+    def path(self):
         return self._path
 
 
@@ -54,6 +52,5 @@ class SignalInformation:
 
     def next(self):
         self._path =self._path[1:]
-
 
 
