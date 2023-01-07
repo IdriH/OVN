@@ -7,11 +7,15 @@ from Node import Node
 import matplotlib.pyplot as plt
 import pandas as pd
 from SignalInformation import SignalInformation
+from spicy import special as math
 
+
+BER_t = 1e-3
+Bn = 12.5e9 #noise bandwidth
 
 class Network:
 
-    def __init__(self,nodes_file):
+    def __init__(self,nodes_file, transciever = 'fixed_rate'):
         self._nodes = {}
         self._lines = {}
         self._connected = False
@@ -25,13 +29,17 @@ class Network:
             node_dict['label'] = node_label
             node = Node(node_dict)
             self._nodes[node_label] = node
+            if 'transciever' not in node_json[node_label].keys():
+                node.transciever = transciever
+            else:
+                node.transciever = node_json[node_label]['transceiver']
 
             for connected_node_label in node_dict['connected_nodes']:
                 line_dict = {}
                 line_label = node_label + connected_node_label
                 line_dict['label'] = line_label
-                node_position = np.array(node_json[node_label]['position'])
-                connected_node_position = np.array(node_json[connected_node_label]['position'])
+                node_position = np.array(node_json[node_label]['position'],dtype = 'float64')
+                connected_node_position = np.array(node_json[connected_node_label]['position'],dtype = 'float64')
                 line_dict['length'] = np.sqrt(np.sum(node_position-connected_node_position)**2)
                 line = Line(line_dict)
                 self._lines[line_label] = line
@@ -217,8 +225,18 @@ class Network:
                 path_occupancy = self.route_space.loc[
                                      self.route_space.path == path].T.values[1:]
 
+                channel = [i for i in range(len(path_occupancy)) if path_occupancy[i] == 'free'][0]
+
+                lightpath = Lightpath(signal_power,path,channel)
+                rb = self.calculate_bit_rate(lightpath,self.nodes[input_node].transciever)
+                if rb == 0:
+                    continue
+                else:
+                    connection.bit_rate = rb
+                path_occupancy = self.route_space.loc[
+                                     self.route_space.path == path].T.values[1:]
                 channel = [i for i in range(len(path_occupancy))
-                 if path_occupancy[i] == 'free'][0]
+                           if path_occupancy[i] == 'free'][0]
 
                 in_lightpath = Lightpath(signal_power, path, channel)
                 out_lightpath = self.propagate(in_lightpath, True)
@@ -246,7 +264,6 @@ class Network:
         return  available_paths
     @staticmethod
     def path_to_line_set(path):
-        print(path)
         return set([path[i] + path[i+1] for i in range(len(path)-1)])
 
     def update_route_space(self,path,channel):
@@ -258,3 +275,33 @@ class Network:
             if lines.intersection(line_set):
                 states[i] = 'occupied'
         self.route_space[str(channel)] = states
+
+    def calculate_bit_rate(self,lightpath,strategy):
+        global BER_t
+        global Bn
+        Rs = lightpath.Rs
+        path = lightpath.path
+        Rb = 0
+        GSNR_db = pd.array(self.weighted_paths.loc[self.weighted_paths['path'] == path]['snr'])[0]
+        GSNR = 10 ** (GSNR_db/10)
+
+        if strategy == 'fixed_rate':
+            if GSNR > 2 * math.erfcinv(2*BER_t) ** 2 * (Rs/Bn):
+                Rb = 100
+            else:
+                Rb = 0
+        if strategy == 'flex_rate':
+            if GSNR < 2 *math.erfcinv(2*BER_t) ** 2 * (Rs/Bn):
+                Rb = 0
+            elif (GSNR > 2 * math.erfcinv(2*BER_t) ** 2 * (Rs/Bn)) & (GSNR < (14/3)*math.erfcinv((3/2)*BER_t)**2*(Rs/Bn)):
+                Rb = 100
+
+            elif (GSNR > (14 / 3) * math.erfcinv((3 / 2) * BER_t) ** 2 * (Rs / Bn)) & (GSNR < 10 * math.erfcinv(
+                    (8 / 3) * BER_t) ** 2 * (Rs / Bn)):
+                Rb = 200
+            elif GSNR > 10 * math.erfcinv((8 / 3) * BER_t) ** 2 * (Rs / Bn):
+                Rb = 400
+
+        if strategy == 'shannon':
+            Rb = 2*Rs*np.log2(1+Bn/Rs * GSNR) /1e9
+        return Rb

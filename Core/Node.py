@@ -8,7 +8,15 @@ class Node:
         self._position = input_dictionary['position']
         self._connected_nodes = input_dictionary['connected_nodes']
         self._successive = {}
+        self._transceiver = ''
 
+
+    @property
+    def transciever(self):
+        return self._transceiver
+    @transciever.setter
+    def transciever(self,value):
+        self._transceiver = value
     @property
     def get_node_label(self):
         return self._label
