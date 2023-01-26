@@ -1,14 +1,17 @@
+from Lightpath import *
 
-class SignalInformation:
+class SignalInformation(Lightpath):
 
 
 
     def __init__(self,signal_power,path):
+        super().__init__(signal_power,path,0)
         self._signal_power = signal_power
         self._noise_power = 0
         self._latency = 0
         self._path = path
-
+        self.Rs = 32.0e9
+        self.df = 50.0e9
 
 
     @property

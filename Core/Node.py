@@ -51,6 +51,9 @@ class Node:
         if len(path)>1:
             line_label = path[0] + path[1] # node to node
             line = self._successive[line_label]
+            sig_power = line.optimized_launch_power(line.eta_nli(lightpath.df, lightpath.Rs))
+            lightpath.set_signal_power(sig_power)
+
             lightpath.next()
             signal_information = line.propagate(lightpath,occupation)
         return lightpath
