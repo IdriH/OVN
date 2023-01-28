@@ -9,6 +9,8 @@ import pandas as pd
 from SignalInformation import SignalInformation
 from spicy import special as math
 from Connection import Connection
+from datetime import datetime
+
 
 
 BER_t = 1e-3
@@ -22,6 +24,9 @@ class Network:
         self._connected = False
         self._weighted_paths = None
         self._route_space = None
+
+        self._logger = {'epoch_time': [],'path':[],'channel_ID': [],'bit_rate': []}
+
 
         node_json = json.load(open(nodes_file,'r'))
 
@@ -160,6 +165,8 @@ class Network:
                 path_string = ''
                 for node in path:
                     path_string += node
+                if self.check_lines_in_path(path):
+                    print(self.check_lines_in_path(path) + " is out of service")
                 paths.append(path_string)
                 # Propagation
 
@@ -288,6 +295,7 @@ class Network:
                 noise_power = out_lightpath.noise_power
                 connection.snr = 10 * np.log10(signal_power / noise_power)
                 self.update_route_space(path, channel)
+                self.update_logger(path,lightpath.channel,connection.bit_rate)
             else:
                 connection.latency = None
                 connection.snr = 0
@@ -301,6 +309,7 @@ class Network:
                      if((path[0] == input_node)and (path[-1] == output_node))]
         available_paths = []
         for path in all_paths:
+
             path_occupancy = self.route_space.loc[
                 self.route_space.path == path].T.values[1:]
             if 'free' in path_occupancy:
@@ -377,3 +386,38 @@ class Network:
             l.free_state()
         for i in range(10):
             self.route_space[str(i)] = states
+
+    def update_logger(self,path,channel_ID,bit_rate):
+
+        epoch_time = datetime.now()
+
+        self._logger['path'].append(path)
+        self._logger['channel_ID'].append(channel_ID)
+        self._logger['bit_rate'].append(bit_rate)
+        self._logger['epoch_time'].append(epoch_time)
+
+
+
+    def logger_df(self):
+        return pd.DataFrame(self._logger)
+
+    def strong_failure(self,line_label):
+
+        line = self._lines.get(line_label)
+        print(type(line))
+        line.set_in_service(0)
+
+    def check_lines_in_path(self,path_str):
+        path_lines = self.path_to_line_set(list(path_str))
+
+        for line in path_lines:
+            if self.lines[line].in_service == 0:
+                return line
+
+
+
+
+
+
+
+

@@ -37,7 +37,7 @@ def main():
 
     plt.title('SNR Distribution Full fixed rate ')
     plt.xlabel('dB')
-    plt.savefig('../Results/SNRDistributionFullfixed_rate.png')
+    plt.savefig('../Results/Lab8/8.9/SNRDistributionFullfixed_rate.png')
     plt.show()
 
     bit_rate_fixed_rate = [connection.bit_rate for connection in streamed_connections_fixed_rate]
@@ -45,7 +45,7 @@ def main():
     plt.hist(b_r_f_r,bins,label = 'fixed-rate')
     plt.title('BitRate Full fixed-rate')
     plt.xlabel('Gbps')
-    plt.savefig('../Results/BitRateFullFixed_rate.png')
+    plt.savefig('../Results/Lab8/8.9/BitRateFullFixed_rate.png')
     plt.show()
 
     # flex_rate
@@ -56,7 +56,7 @@ def main():
     plt.hist(snrs_,bins = 20)
     plt.title('SNR Distribution flex-rate')
     plt.xlabel('dB')
-    plt.savefig('../Results/SNRDistributionFullflex_rate.png')
+    plt.savefig('../Results/Lab8/8.9/SNRDistributionFullflex_rate.png')
     plt.show()
 
     bit_rate_flex_rate = [connection.bit_rate for connection in streamed_connections_flex_rate]
@@ -65,7 +65,7 @@ def main():
 
     plt.xlabel('Gbps')
     plt.title('BitRate Full Flex-Rate')
-    plt.savefig('../Results/BitRateFullFlex_Rate.png')
+    plt.savefig('../Results/Lab8/8.9/BitRateFullFlex_Rate.png')
     plt.show()
 
     #shanon
@@ -77,7 +77,7 @@ def main():
 
     plt.title('SNR Distribution Full Shannon')
     plt.xlabel('dB')
-    plt.savefig('../Results/SNRDistributionFullshannon.png')
+    plt.savefig('../Results/Lab8/8.9/SNRDistributionFullshannon.png')
     #plt.show()
 
     bit_rate_shannon = [connection.bit_rate for connection in streamed_connections_shannon]
@@ -87,7 +87,7 @@ def main():
 
     plt.xlabel('Gbps')
     plt.title('BitRate Full Shannon')
-    plt.savefig('../Results/BitRateFullShannon.png')
+    plt.savefig('../Results/Lab8/8.9/BitRateFullShannon.png')
 
     plt.show()
 
@@ -113,12 +113,14 @@ def main():
     #total capacity
     #print("Average Latency: ", np.average(np.ma.masked_equal(latencies, None)))
     #print("Average SNR: ", np.average(np.ma.masked_equal(snrs, 0)))
-    print("Total Capacity Fixed-Rate:", np.sum(bit_rate_fixed_rate))
-    print("Average Capacity Fixed-Rate:", np.mean(np.ma.masked_equal(bit_rate_fixed_rate, 0)))
-    print("Total Capacity Flex-Rate:", np.sum(bit_rate_flex_rate))
-    print("Average Capacity Flex-Rate:", np.mean(np.ma.masked_equal(bit_rate_flex_rate, 0)))
-    print("Total Capacity Shannon:", np.sum(bit_rate_shannon).round(2))
-    print("Average Capacity Shannon:", np.mean(np.ma.masked_equal(bit_rate_shannon, 0).round(2)))
+
+    sourceFile = open('../Results/Lab8/8.9/Capacity results','w')
+    print("Total Capacity Fixed-Rate:", np.sum(bit_rate_fixed_rate),file = sourceFile)
+    print("Average Capacity Fixed-Rate:", np.mean(np.ma.masked_equal(bit_rate_fixed_rate, 0)),file = sourceFile)
+    print("Total Capacity Flex-Rate:", np.sum(bit_rate_flex_rate),file = sourceFile)
+    print("Average Capacity Flex-Rate:", np.mean(np.ma.masked_equal(bit_rate_flex_rate, 0)),file = sourceFile)
+    print("Total Capacity Shannon:", np.sum(bit_rate_shannon).round(2),file = sourceFile)
+    print("Average Capacity Shannon:", np.mean(np.ma.masked_equal(bit_rate_shannon, 0).round(2)),file = sourceFile)
 
 
 

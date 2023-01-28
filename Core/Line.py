@@ -16,14 +16,25 @@ class Line:
         # 1 amplifier every 80 km + booster + preamplifier
         self._span_length = self._length/self.n_amplifiers
         self.gain = 16 #db
-        self.noise_figure = 3 #db
+        self.noise_figure = 5 #3 #db
 
         #Physical parameters of the fiber
         self._alpha = 0.2e-3 #db/m
-        self._beta_2 = 2.13e-26 # m Hz2-1
+        self._beta_2 = 2.13e-26 #0.6e-26    # m Hz2-1
         self._gama = 1.27e-3
         self._Rs = 32e9 #HZ
         self._df = 50e9 #hz
+
+        #inserice
+        self._in_service = 1
+
+
+    @property
+    def in_service(self):
+        return self._in_service
+
+    def set_in_service(self,bool):
+        self._in_service = bool
 
     @property
     def alpha(self):
@@ -137,3 +148,4 @@ class Line:
 
     def free_state(self):
         self._state = ['free'] * 10
+
