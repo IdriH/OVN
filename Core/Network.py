@@ -138,7 +138,9 @@ class Network:
                 y1 = n1.get_node_position[1]
                 plt.plot([x0, x1], [y0, y1], 'b')
         plt.title('Network')
+        plt.savefig('../Results/Topology')
         plt.show()
+
 
 
     @property
@@ -297,7 +299,7 @@ class Network:
                 self.update_route_space(path, channel)
                 self.update_logger(path,lightpath.channel,connection.bit_rate)
             else:
-                connection.latency = None
+                connection.latency = 0
                 connection.snr = 0
             streamed_connections.append(connection)
         return  streamed_connections

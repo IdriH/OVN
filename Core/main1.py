@@ -10,6 +10,7 @@ from Connection import Connection
 
 
 def main():
+    network = Network('../Resources/263697.json')
     network_fixed_rate = Network('../Resources/263697.json')
     network_flex_rate = Network('../Resources/263697.json','flex_rate')
     network_shannon = Network('../Resources/263697.json','shannon')
@@ -91,28 +92,26 @@ def main():
 
     plt.show()
 
-
-##########
-    """
     streamed_connections = network.stream(connections)
-    latencies = [connection.latency for connection in streamed_connections]
-    latencies_ = np.ma.masked_equal(latencies,0)
-    plt.hist(latencies_, bins=25)
+    latencies = [connection.latency for connection in streamed_connections_shannon]
+    plt.hist(np.ma.masked_equal(latencies, 0), bins=25)
     plt.title('Latency Distribution')
     plt.savefig('../Results/LatencyDistribution.png')
     plt.show()
-    """
-    #streamed_connections = network.stream(connections)
-    #snrs = [connection.snr for connection in streamed_connections]
-    #plt.hist(np.ma.masked_equal(snrs, 0), bins=20)
-    #plt.title('SNR Dstribution')
-    #plt.savefig('../Results/SNRDistribution.png')
-    #plt.show()
+    snrs = [connection.snr for connection in streamed_connections_shannon]
+    plt.hist(np.ma.masked_equal(snrs, 0), bins=20)
+    plt.title('SNR Dstribution')
+    plt.savefig('../Results/SNRDistribution.png')
+    plt.show()
 
-    #latencies = [connection.latency for connection in streamed_connections]
-    #total capacity
-    #print("Average Latency: ", np.average(np.ma.masked_equal(latencies, None)))
-    #print("Average SNR: ", np.average(np.ma.masked_equal(snrs, 0)))
+    # total capacity _________________________________________________________________________
+
+    print("Average Latency: ", np.average(np.ma.masked_equal(latencies, 0)))
+    print("Average SNR: ", np.average(np.ma.masked_equal(snrs, 0)))
+
+
+
+
 
     sourceFile = open('../Results/Lab8/8.9/Capacity results','w')
     print("Total Capacity Fixed-Rate:", np.sum(bit_rate_fixed_rate),file = sourceFile)

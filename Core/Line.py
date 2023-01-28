@@ -16,7 +16,7 @@ class Line:
         # 1 amplifier every 80 km + booster + preamplifier
         self._span_length = self._length/self.n_amplifiers
         self.gain = 16 #db
-        self.noise_figure = 5 #3 #db
+        self.noise_figure =  5 #3 #db
 
         #Physical parameters of the fiber
         self._alpha = 0.2e-3 #db/m
